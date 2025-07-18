@@ -1,0 +1,179 @@
+!unzip archive.zip
+!unzip archive_NEW.zip
+
+from tensorflow.keras.models import load_model
+model = load_model('brain_tumor_CNN.h5')
+
+#SPLITTING DATA FOR VAL&TRAINING
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# Initialize the ImageDataGenerator with data augmentation for training and normalization for validation
+train_datagen = ImageDataGenerator(rescale=1./255,
+                                   shear_range=0.2,
+                                   zoom_range=0.2,
+                                   horizontal_flip=True,
+                                   validation_split=0.2)  # 20% for validation
+
+# Flow training images from the "NEW DATA" directory
+train_generator = train_datagen.flow_from_directory(
+    'NEW DATA',  # Replace with the actual path to your "NEW DATA" folder
+    target_size=(224, 224),  # Or the image size you used previously
+    batch_size=32,
+    class_mode='binary',  # Use 'categorical' if you have more than two classes
+    subset='training')  # Use training subset
+
+# Flow validation images from the "NEW DATA" directory
+validation_generator = train_datagen.flow_from_directory(
+    'NEW DATA',  # Same path as above
+    target_size=(224, 224),
+    batch_size=32,
+    class_mode='binary',
+    subset='validation')
+
+import matplotlib.pyplot as plt
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+train_datagen = ImageDataGenerator(
+    rescale=1./255,  # Normalize pixel values
+    rotation_range=40,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
+
+train_generator = train_datagen.flow_from_directory(
+    'NEW DATA',  # Make sure 'NEW DATA' folder is in the correct directory
+    target_size=(128, 128),  # Resize the images to the target size
+    color_mode='grayscale',  # Use grayscale mode (1 channel)
+    batch_size=32,
+    class_mode='binary',  # Binary classification: 'yes' vs 'no'
+    shuffle=True
+)
+
+#CREATING MODEL
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+
+model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 1)),
+    MaxPooling2D((2, 2)),
+    Conv2D(64, (3, 3), activation='relu'),
+    MaxPooling2D((2, 2)),
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dense(1, activation='sigmoid')  # Sigmoid for binary classification
+])
+
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+history = model.fit(
+    train_generator,
+    steps_per_epoch=len(train_generator) // train_generator.batch_size,  # Manually calculate steps per epoch
+    epochs=10,  # Adjust number of epochs
+    verbose=1
+)
+
+plt.figure(figsize=(12, 6))
+
+# Plot accuracy
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.title('Training Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+
+# Plot loss
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.title('Training Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+#RUN2
+import matplotlib.pyplot as plt
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Dropout
+
+# Step 1: Define the ImageDataGenerator (already done in your case)
+train_datagen = ImageDataGenerator(
+    rescale=1./255,  # Normalize pixel values
+    rotation_range=40,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    shear_range=0.2,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
+
+# Step 2: Create the generator (ensure proper path and configurations)
+train_generator = train_datagen.flow_from_directory(
+    'NEW DATA',  # Make sure 'NEW DATA' folder is in the correct directory
+    target_size=(128, 128),  # Resize the images to the target size
+    color_mode='grayscale',  # Use grayscale mode (1 channel)
+    batch_size=32,
+    class_mode='binary',  # Binary classification: 'yes' vs 'no'
+    shuffle=True
+)
+
+# Step 3: Modify the model with Dropout and learning rate adjustment
+model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 1)),
+    MaxPooling2D((2, 2)),
+    Dropout(0.25),  # Dropout to prevent overfitting
+    Conv2D(64, (3, 3), activation='relu'),
+    MaxPooling2D((2, 2)),
+    Dropout(0.25),  # Dropout in second convolutional block
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dense(1, activation='sigmoid')  # Sigmoid for binary classification
+])
+
+# Compile the model with a lower learning rate
+optimizer = Adam(learning_rate=0.0001)  # Reduced learning rate
+model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+
+# Step 4: Train the model with more epochs and adjusted learning rate
+history = model.fit(
+    train_generator,
+    steps_per_epoch=len(train_generator) // train_generator.batch_size,
+    epochs=20,  # Increase epochs for more training time
+    verbose=1
+)
+
+# Step 5: Plot accuracy and loss graphs
+plt.figure(figsize=(12, 6))
+
+# Plot accuracy
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.title('Training Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+
+# Plot loss
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.title('Training Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+model.save("brain_tumor_CNN_NEW_MAR21.h5")
+print("Model saved as brain_tumor_CNN_NEW.h5")
+
+#.keras option might be preferred in the final step as it is more modern
